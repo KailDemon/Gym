@@ -1,4 +1,3 @@
-
 <?php
 // Verifica si la sesión ya está iniciada
 if (session_status() === PHP_SESSION_NONE) {
@@ -103,8 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Limpiar sesión
             unset($_SESSION['reset_token'], $_SESSION['reset_email'], $_SESSION['reset_expires']);
             
-            $_SESSION['success'] = "Tu contraseña ha sido restablecida correctamente. Ahora puedes iniciar sesión.";
-            header("Location: login.php");
+            // Mensaje específico de confirmación
+            $_SESSION['success'] = "✅ Tu contraseña ha sido establecida correctamente. Ahora puedes iniciar sesión con tu nueva contraseña.";
+            header("Location: recuperar.php?step=success");
             exit;
     }
 }
@@ -114,7 +114,7 @@ $error = isset($_SESSION['error']) ? $_SESSION['error'] : '';
 $success = isset($_SESSION['success']) ? $_SESSION['success'] : '';
 unset($_SESSION['error'], $_SESSION['success']);
 
-$step = isset($_GET['step']) ? intval($_GET['step']) : 1;
+$step = isset($_GET['step']) ? $_GET['step'] : 1;
 $token = isset($_GET['token']) ? $_GET['token'] : '';
 
 // Cabeceras para evitar caché
@@ -341,6 +341,10 @@ header("Expires: 0");
             box-shadow: 0 6px 20px rgba(218, 27, 96, 0.4);
         }
 
+        .btn-success {
+            background: linear-gradient(to right, #169976, #20c997);
+        }
+
         .alert {
             padding: 1rem;
             border-radius: 8px;
@@ -355,9 +359,11 @@ header("Expires: 0");
         }
 
         .alert-success {
-            background-color: #d1edff;
-            color: #0c5460;
-            border-color: #bee5eb;
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+            font-size: 1.1rem;
+            font-weight: 600;
         }
 
         .progress-steps {
@@ -467,6 +473,20 @@ header("Expires: 0");
             width: 100%;
         }
 
+        .success-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+            color: #169976;
+        }
+
+        .success-message {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #155724;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
         @media screen and (max-width: 768px) {
             .nav-links {
                 position: absolute;
@@ -497,6 +517,10 @@ header("Expires: 0");
             .step-label {
                 font-size: 0.7rem;
             }
+
+            .success-message {
+                font-size: 1.1rem;
+            }
         }
     </style>
 </head>
@@ -522,88 +546,107 @@ header("Expires: 0");
     
     <div class="recovery-container">
         <div class="recovery-form">
-            <div class="recovery-logo">
-                <div>🔑</div>
-                <h2>Recuperar Contraseña</h2>
-            </div>
-            
-            <!-- Indicador de progreso -->
-            <div class="progress-steps">
-                <div class="progress-bar" style="width: <?php echo ($step == 1) ? '0%' : (($step == 2) ? '50%' : '100%'); ?>"></div>
-                <div class="step <?php echo ($step >= 1) ? 'active' : ''; ?> <?php echo ($step > 1) ? 'completed' : ''; ?>">
-                    1
-                    <span class="step-label">Email</span>
+            <?php if ($step == 'success'): ?>
+                <!-- Pantalla de éxito -->
+                <div class="recovery-logo">
+                    <div class="success-icon">✅</div>
+                    <h2>¡Contraseña Establecida!</h2>
                 </div>
-                <div class="step <?php echo ($step >= 2) ? 'active' : ''; ?> <?php echo ($step > 2) ? 'completed' : ''; ?>">
-                    2
-                    <span class="step-label">Código</span>
+                
+                <div class="success-message">
+                    Tu contraseña ha sido establecida correctamente.<br>
+                    Ahora puedes iniciar sesión con tu nueva contraseña.
                 </div>
-                <div class="step <?php echo ($step >= 3) ? 'active' : ''; ?>">
-                    3
-                    <span class="step-label">Nueva Contraseña</span>
+                
+                <div class="form-group">
+                    <a href="login.php" class="btn btn-success">Ir al Inicio de Sesión</a>
                 </div>
-            </div>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-danger"><?php echo $error; ?></div>
+                
+            <?php else: ?>
+                <!-- Proceso normal de recuperación -->
+                <div class="recovery-logo">
+                    <div>🔑</div>
+                    <h2>Recuperar Contraseña</h2>
+                </div>
+                
+                <!-- Indicador de progreso -->
+                <div class="progress-steps">
+                    <div class="progress-bar" style="width: <?php echo ($step == 1) ? '0%' : (($step == 2) ? '50%' : '100%'); ?>"></div>
+                    <div class="step <?php echo ($step >= 1) ? 'active' : ''; ?> <?php echo ($step > 1) ? 'completed' : ''; ?>">
+                        1
+                        <span class="step-label">Email</span>
+                    </div>
+                    <div class="step <?php echo ($step >= 2) ? 'active' : ''; ?> <?php echo ($step > 2) ? 'completed' : ''; ?>">
+                        2
+                        <span class="step-label">Código</span>
+                    </div>
+                    <div class="step <?php echo ($step >= 3) ? 'active' : ''; ?>">
+                        3
+                        <span class="step-label">Nueva Contraseña</span>
+                    </div>
+                </div>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-danger"><?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success && $step != 'success'): ?>
+                    <div class="alert alert-success"><?php echo $success; ?></div>
+                <?php endif; ?>
+                
+                <!-- Paso 1: Solicitar recuperación -->
+                <?php if ($step == 1): ?>
+                    <form method="post" action="">
+                        <input type="hidden" name="action" value="request">
+                        <div class="form-group">
+                            <label for="email">Correo Electrónico</label>
+                            <input type="email" id="email" name="email" class="form-control" placeholder="Ingresa tu correo electrónico" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn">Enviar Código de Verificación</button>
+                        </div>
+                    </form>
+                <?php endif; ?>
+                
+                <!-- Paso 2: Verificar código -->
+                <?php if ($step == 2): ?>
+                    <form method="post" action="">
+                        <input type="hidden" name="action" value="verify">
+                        <input type="hidden" name="email" value="<?php echo isset($_GET['email']) ? htmlspecialchars($_GET['email']) : ''; ?>">
+                        <div class="form-group">
+                            <label for="code">Código de Verificación</label>
+                            <input type="text" id="code" name="code" class="form-control" placeholder="Ingresa el código enviado a tu email" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn">Verificar Código</button>
+                        </div>
+                    </form>
+                <?php endif; ?>
+                
+                <!-- Paso 3: Establecer nueva contraseña -->
+                <?php if ($step == 3): ?>
+                    <form method="post" action="">
+                        <input type="hidden" name="action" value="reset">
+                        <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
+                        <div class="form-group">
+                            <label for="new_password">Nueva Contraseña</label>
+                            <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Ingresa tu nueva contraseña" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm_password">Confirmar Contraseña</label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirma tu nueva contraseña" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn">Establecer Nueva Contraseña</button>
+                        </div>
+                    </form>
+                <?php endif; ?>
+                
+                <!-- Enlaces adicionales -->
+                <div class="recovery-links">
+                    <a href="login.php">Volver al inicio de sesión</a>
+                </div>
             <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success"><?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <!-- Paso 1: Solicitar recuperación -->
-            <?php if ($step == 1): ?>
-                <form method="post" action="">
-                    <input type="hidden" name="action" value="request">
-                    <div class="form-group">
-                        <label for="email">Correo Electrónico</label>
-                        <input type="email" id="email" name="email" class="form-control" placeholder="Ingresa tu correo electrónico" required>
-                    </div>
-                    <div class="form-group">
-                        <button type="submit" class="btn">Enviar Código de Verificación</button>
-                    </div>
-                </form>
-            <?php endif; ?>
-            
-            <!-- Paso 2: Verificar código -->
-            <?php if ($step == 2): ?>
-                <form method="post" action="">
-                    <input type="hidden" name="action" value="verify">
-                    <input type="hidden" name="email" value="<?php echo isset($_GET['email']) ? htmlspecialchars($_GET['email']) : ''; ?>">
-                    <div class="form-group">
-                        <label for="code">Código de Verificación</label>
-                        <input type="text" id="code" name="code" class="form-control" placeholder="Ingresa el código enviado a tu email" required>
-                    </div>
-                    <div class="form-group">
-                        <button type="submit" class="btn">Verificar Código</button>
-                    </div>
-                </form>
-            <?php endif; ?>
-            
-            <!-- Paso 3: Establecer nueva contraseña -->
-            <?php if ($step == 3): ?>
-                <form method="post" action="">
-                    <input type="hidden" name="action" value="reset">
-                    <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
-                    <div class="form-group">
-                        <label for="new_password">Nueva Contraseña</label>
-                        <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Ingresa tu nueva contraseña" required minlength="6">
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm_password">Confirmar Contraseña</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirma tu nueva contraseña" required minlength="6">
-                    </div>
-                    <div class="form-group">
-                        <button type="submit" class="btn">Restablecer Contraseña</button>
-                    </div>
-                </form>
-            <?php endif; ?>
-            
-            <!-- Enlaces adicionales -->
-            <div class="recovery-links">
-                <a href="login.php">Volver al inicio de sesión</a>
-            </div>
         </div>
     </div>
 
