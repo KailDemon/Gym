@@ -1,5 +1,4 @@
-[file name]: recuperar.php
-[file content begin]
+
 <?php
 // Verifica si la sesión ya está iniciada
 if (session_status() === PHP_SESSION_NONE) {
@@ -638,4 +637,3 @@ header("Expires: 0");
     </script>
 </body>
 </html>
-[file content end]
